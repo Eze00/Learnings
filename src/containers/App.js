@@ -1,38 +1,43 @@
-import React from 'react';
+import { useEffect} from 'react';
+import { connect } from 'react-redux';
 import CardList from '../components/CardList';
 import SearchBox from '../utils/SearchBox';
 import Scroll from '../utils/Scroll';
 import '../styles/Styles.css';
 import ErrorBoundary from './ErrorBoundary';
+import { setSearchField, requestRobots } from '../actions';
 
-class App extends React.Component {
-    constructor() {
-        super()
-        this.state = {
-            robots: [],
-            searchField: ''
-        }
+const mapStateToProps = (state) => {
+    return {
+        searchField: state.searchRobots.searchField,
+        isPending: state.requestRobots.isPending,
+        robots: state.requestRobots.robots,
+        error: state.requestRobots.error 
+    };
+}
+
+const mapDispatchToProps = (dispatch) => {
+    return{
+        onSearchChange: (event) => dispatch(setSearchField(event.target.value)),
+        onRequestRobots: () => dispatch(requestRobots())
     }
+}
 
-    componentDidMount() {
-        fetch('https://jsonplaceholder.typicode.com/users')
-            .then(response => {return response.json()})
-            .then(users => this.setState({ robots: users }))
-    }
+const App = (props) => {
+    const { searchField, onSearchChange, onRequestRobots, isPending, robots } = props;
 
-    onSearchChange = (event) => {
-        this.setState({ searchField: event.target.value })
-    }
+    useEffect(() => {
+        onRequestRobots();
+    }, []);
 
-    render() {
-        const { robots, searchField } = this.state;
-        const filteredRobots = robots.filter(robot => {
-        return robot.name.toLowerCase().includes(searchField.toLowerCase());
-        });
-        return !robots.length? <h1 className='app-text-style'>Loading</h1> :  (
+    const filteredRobots = robots.filter(robot => {
+    return robot.name.toLowerCase().includes(searchField.toLowerCase());
+    });
+
+    return isPending ? <h1 className='app-text-style'>Loading</h1> :  (
             <div className='app-text-style'>
                 <h1 className='title-size'>RoboFriends</h1>
-                <SearchBox searchChange={this.onSearchChange}/>
+                <SearchBox searchChange={onSearchChange}/>
                 <Scroll>
                     <ErrorBoundary>
                     <CardList robots={filteredRobots}/>
@@ -40,7 +45,7 @@ class App extends React.Component {
                 </Scroll>
             </div>
         )
-    };
-};
+}
 
-export default App;
+export default connect(mapStateToProps, mapDispatchToProps)(App);
+
